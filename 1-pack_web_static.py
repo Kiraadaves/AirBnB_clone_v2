@@ -1,23 +1,29 @@
 #!/usr/bin/python3
-"""Compress files"""
-from fabric.api import *
+"""A module for Fabric script that generates a .tgz archive."""
+import os
 from datetime import datetime
-from os.path import getsize
+from fabric.api import local, runs_once
 
 
 @runs_once
 def do_pack():
-    """Function that compress a files"""
-    fil = "web_static_{:s}.tgz".format(datetime.now().strftime("%Y%m%d%H%M%S"))
-    print("Packing web_static to versions/{}".format(fil))
-
-    local("mkdir -p versions")
-    path = local("tar -cvzf versions/{:s} web_static".format(fil))
-
-    size = getsize("versions/{}".format(fil))
-
-    if path.succeeded:
-        print("web_static packed: versions/{} -> {}Bytes".format(fil, size))
-        return("versions/{}".format(fil))
-    else:
-        return None
+    """Archives the static files."""
+    if not os.path.isdir("versions"):
+        os.mkdir("versions")
+    d_time = datetime.now()
+    output = "versions/web_static_{}{}{}{}{}{}.tgz".format(
+        d_time.year,
+        d_time.month,
+        d_time.day,
+        d_time.hour,
+        d_time.minute,
+        d_time.second
+    )
+    try:
+        print("Packing web_static to {}".format(output))
+        local("tar -cvzf {} web_static".format(output))
+        size = os.stat(output).st_size
+        print("web_static packed: {} -> {} Bytes".format(output, size))
+    except Exception:
+        output = None
+    return output

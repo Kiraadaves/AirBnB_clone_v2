@@ -1,32 +1,28 @@
 #!/usr/bin/python3
-""" Keep it clean!"""
+# Fabfile to delete out-of-date archives.
+import os
 from fabric.api import *
-from fabric.context_managers import *
 
-env.hosts = ["35.231.133.57", "54.91.43.217"]
+env.hosts = ["104.196.168.90", "35.196.46.172"]
 
 
 def do_clean(number=0):
-    """Clean everything"""
+    """Delete out-of-date archives.
+    Args:
+        number (int): The number of archives to keep.
+    If number is 0 or 1, keeps only the most recent archive. If
+    number is 2, keeps the most and second-most recent archives,
+    etc.
+    """
+    number = 1 if int(number) == 0 else int(number)
 
-    if int(number) == 0 or int(number) == 1:
-        number = 1
-        with lcd("versions"):
-            local("(ls -t | head -n {};ls)| grep -v test \
-                 |sort|uniq -u|xargs rm -rf".format(number))
+    archives = sorted(os.listdir("versions"))
+    [archives.pop() for i in range(number)]
+    with lcd("versions"):
+        [local("rm ./{}".format(a)) for a in archives]
 
-        with cd("/data/web_static/releases"):
-            run("(ls -t | head -n {};ls)| grep -v test \
-                |sort|uniq -u|xargs rm -rf".format(number))
-
-    elif int(number) > 1:
-        with lcd("versions"):
-            local("(ls -t | head -n {};ls)| grep -v test \
-                 |sort|uniq -u|xargs rm -rf".format(number))
-
-        with cd("/data/web_static/releases"):
-            run("(ls -t | head -n {};ls)| grep -v test \
-                |sort|uniq -u|xargs rm -rf".format(number))
-
-    else:
-        pass
+    with cd("/data/web_static/releases"):
+        archives = run("ls -tr").split()
+        archives = [a for a in archives if "web_static_" in a]
+        [archives.pop() for i in range(number)]
+        [run("rm -rf ./{}".format(a)) for a in archives]

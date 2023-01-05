@@ -1,29 +1,40 @@
 #!/usr/bin/python3
-"""script that starts a Flask web application"""
-from flask import Flask, render_template
+"""Starts a Flask web application.
+The application listens on 0.0.0.0, port 5000.
+Routes:
+    /states: HTML page with a list of all State objects.
+    /states/<id>: HTML page displaying the given state with <id>.
+"""
 from models import storage
+from flask import Flask
+from flask import render_template
 
 app = Flask(__name__)
 
 
+@app.route("/states", strict_slashes=False)
+def states():
+    """Displays an HTML page with a list of all States.
+    States are sorted by name.
+    """
+    states = storage.all("State")
+    return render_template("9-states.html", state=states)
+
+
+@app.route("/states/<id>", strict_slashes=False)
+def states_id(id):
+    """Displays an HTML page with info about <id>, if it exists."""
+    for state in storage.all("State").values():
+        if state.id == id:
+            return render_template("9-states.html", state=state)
+    return render_template("9-states.html")
+
+
 @app.teardown_appcontext
-def close_db(self):
-    """app context"""
+def teardown(exc):
+    """Remove the current SQLAlchemy session."""
     storage.close()
 
 
-@app.route('/states', strict_slashes=False)
-def Display_states():
-    """Display all states objects"""
-    data = storage.all('State')
-    return render_template('9-states.html', data=data)
-
-
-@app.route('/states/<id>', strict_slashes=False)
-def Updating_states(id):
-    """Update html with id"""
-    data = storage.all('State')
-    return render_template('9-states.html', data=data, id=id)
-
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host="0.0.0.0")
